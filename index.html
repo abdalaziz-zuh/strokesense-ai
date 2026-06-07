@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StrokeSense AI — Stroke Prediction System</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:#0a1628;--navy2:#0d2147;--accent:#38bdf8;--accent2:#0ea5e9;
+  --green:#10b981;--yellow:#f59e0b;--red:#ef4444;
+  --text:#e2e8f0;--muted:#94a3b8;--card:rgba(255,255,255,0.04);--border:rgba(255,255,255,0.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--navy);color:var(--text);min-height:100vh;}
+body.ar{font-family:'IBM Plex Sans Arabic',sans-serif;direction:rtl;}
+body.ar .bar-label{text-align:left;}
+
+/* Navbar */
+nav{position:sticky;top:0;z-index:100;background:rgba(10,22,40,.95);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);padding:0 1.5rem;height:60px;
+  display:flex;align-items:center;justify-content:space-between;}
+.logo{display:flex;align-items:center;gap:9px;font-size:16px;font-weight:600;color:white;}
+.logo-dot{width:9px;height:9px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent);}
+.nav-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.nav-tab{padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;
+  border:none;background:transparent;color:var(--muted);transition:all .2s;font-family:inherit;}
+.nav-tab:hover{color:white;background:var(--card);}
+.nav-tab.active{background:var(--accent2);color:white;}
+.lang-btn{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;
+  border:1px solid var(--accent);background:transparent;color:var(--accent);
+  transition:all .2s;font-family:inherit;}
+.lang-btn:hover{background:var(--accent);color:var(--navy);}
+
+/* Hero */
+.hero{background:linear-gradient(135deg,var(--navy) 0%,#0c2040 50%,#0a1e3d 100%);
+  padding:2.5rem 2rem 2rem;text-align:center;border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 70% 60% at 50% 0%,rgba(56,189,248,.07),transparent);pointer-events:none;}
+.hero-tag{display:inline-block;background:rgba(56,189,248,.12);color:var(--accent);
+  border:1px solid rgba(56,189,248,.25);border-radius:20px;
+  font-size:12px;padding:4px 14px;margin-bottom:.9rem;letter-spacing:.5px;}
+.hero h1{font-size:26px;font-weight:600;line-height:1.4;margin-bottom:.6rem;}
+.hero p{color:var(--muted);font-size:14px;max-width:560px;margin:0 auto 1.25rem;line-height:1.8;}
+.hero-stats{display:flex;justify-content:center;gap:2.5rem;flex-wrap:wrap;}
+.hstat .num{font-size:24px;font-weight:600;color:var(--accent);}
+.hstat .lbl{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* Pages */
+.page{display:none;padding:1.75rem;max-width:1000px;margin:0 auto;}
+.page.active{display:block;}
+.section-title{font-size:15px;font-weight:600;color:white;display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;}
+.section-title::before{content:'';width:3px;height:18px;background:var(--accent);border-radius:2px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;}
+
+/* Upload zone */
+.upload-zone{border:2px dashed var(--border);border-radius:10px;padding:1.5rem;
+  text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:1.25rem;background:rgba(56,189,248,.02);}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent2);background:rgba(56,189,248,.05);}
+.upload-zone .up-icon{font-size:32px;margin-bottom:.5rem;}
+.upload-zone p{font-size:13px;color:var(--muted);}
+.upload-zone span{color:var(--accent);font-weight:500;}
+#file-input{display:none;}
+.upload-status{margin-top:.75rem;font-size:12px;color:var(--accent);}
+
+/* Form */
+.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-bottom:1.25rem;}
+@media(max-width:680px){.form-grid{grid-template-columns:1fr 1fr;}}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;}
+input,select{width:100%;padding:9px 12px;background:rgba(255,255,255,.05);
+  border:1px solid var(--border);border-radius:7px;color:white;font-size:13px;
+  font-family:inherit;outline:none;transition:border-color .2s;}
+input:focus,select:focus{border-color:var(--accent2);}
+select option{background:#0d2147;}
+
+.predict-btn{background:var(--accent2);color:white;border:none;padding:11px 28px;
+  border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;}
+.predict-btn:hover{background:#0284c7;}
+.predict-btn:active{transform:scale(.98);}
+
+/* Result */
+#result-box{margin-top:1.5rem;display:none;}
+.result-inner{display:flex;align-items:center;gap:1.5rem;background:var(--card);
+  border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;}
+.risk-ring{width:78px;height:78px;border-radius:50%;flex-shrink:0;display:flex;
+  flex-direction:column;align-items:center;justify-content:center;border:3px solid;font-weight:600;}
+.risk-ring .pct{font-size:19px;} .risk-ring .lbl{font-size:10px;opacity:.8;}
+.risk-low{border-color:var(--green);color:var(--green);background:rgba(16,185,129,.1);}
+.risk-medium{border-color:var(--yellow);color:var(--yellow);background:rgba(245,158,11,.1);}
+.risk-high{border-color:var(--red);color:var(--red);background:rgba(239,68,68,.1);}
+.result-text h3{font-size:15px;font-weight:600;margin-bottom:5px;}
+.result-text p{font-size:13px;color:var(--muted);line-height:1.7;}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+.tag{font-size:11px;padding:3px 9px;border-radius:4px;
+  background:rgba(56,189,248,.1);color:var(--accent);border:1px solid rgba(56,189,248,.2);}
+
+/* Chat */
+.chat-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.chat-header{background:rgba(13,33,71,.8);padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);}
+.groq-icon{width:28px;height:28px;background:#f55036;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;}
+.chat-header-text h4{font-size:13px;font-weight:600;}
+.chat-header-text p{font-size:11px;color:var(--muted);}
+.online-dot{width:7px;height:7px;background:var(--green);border-radius:50%;margin-right:auto;}
+body.ar .online-dot{margin-right:0;margin-left:auto;}
+#chat-messages{padding:1.25rem;min-height:300px;max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;}
+.msg{max-width:78%;padding:9px 13px;border-radius:10px;font-size:13px;line-height:1.6;}
+.msg.bot{background:rgba(255,255,255,.06);align-self:flex-start;border:1px solid var(--border);}
+.msg.user{background:var(--accent2);color:white;align-self:flex-end;}
+.chat-input-row{border-top:1px solid var(--border);padding:12px;display:flex;gap:8px;}
+#chat-input{flex:1;padding:9px 12px;border-radius:7px;background:rgba(255,255,255,.05);
+  border:1px solid var(--border);color:white;font-size:13px;font-family:inherit;outline:none;}
+#chat-input:focus{border-color:var(--accent2);}
+#send-btn{background:var(--accent2);color:white;border:none;padding:9px 18px;
+  border-radius:7px;font-size:13px;font-family:inherit;cursor:pointer;font-weight:500;}
+.quick-btns{display:flex;gap:8px;flex-wrap:wrap;padding:0 1.25rem 1rem;}
+.qbtn{font-size:11px;padding:5px 10px;border-radius:5px;cursor:pointer;
+  background:rgba(56,189,248,.08);color:var(--accent);border:1px solid rgba(56,189,248,.2);
+  font-family:inherit;transition:background .2s;}
+.qbtn:hover{background:rgba(56,189,248,.18);}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.5rem;}
+@media(max-width:680px){.stats-grid{grid-template-columns:1fr 1fr;}}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem;}
+.stat-card .s-lbl{font-size:11px;color:var(--muted);margin-bottom:6px;}
+.stat-card .s-val{font-size:22px;font-weight:600;color:var(--accent);}
+.stat-card .s-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+@media(max-width:680px){.charts-grid{grid-template-columns:1fr;}}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1.25rem;}
+.chart-title{font-size:13px;font-weight:500;margin-bottom:1rem;color:var(--muted);}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:12px;}
+.bar-label{width:110px;text-align:right;color:var(--muted);flex-shrink:0;}
+body.ar .bar-label{text-align:left;}
+.bar-track{flex:1;background:rgba(255,255,255,.06);border-radius:4px;height:10px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:4px;background:var(--accent2);}
+.bar-fill.green{background:var(--green);} .bar-fill.yellow{background:var(--yellow);} .bar-fill.red{background:var(--red);}
+.bar-pct{width:38px;font-size:11px;color:var(--muted);}
+.pie-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;font-size:12px;}
+.pie-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.pie-name{flex:1;color:var(--muted);} .pie-val{font-weight:500;}
+
+/* About */
+.team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.team-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1.25rem;text-align:center;}
+.avatar{width:52px;height:52px;border-radius:50%;margin:0 auto 10px;background:var(--accent2);
+  display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;}
+.team-card h4{font-size:13px;font-weight:600;}
+.model-info{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:1rem;}
+.info-item{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1rem;}
+.info-item .i-lbl{font-size:11px;color:var(--muted);margin-bottom:4px;}
+.info-item .i-val{font-size:14px;font-weight:500;color:var(--accent);}
+
+/* Risk badges on form labels */
+.risk-badge{font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600;margin-left:6px;transition:all .3s;}
+body.ar .risk-badge{margin-left:0;margin-right:6px;}
+.rb-low {background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3);}
+.rb-med {background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3);}
+.rb-high{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3);}
+.field-low  select,.field-low  input{border-color:rgba(16,185,129,.5)!important;}
+.field-med  select,.field-med  input{border-color:rgba(245,158,11,.5)!important;}
+.field-high select,.field-high input{border-color:rgba(239,68,68,.5)!important;}
+
+/* Urgency box */
+.urgency-box{display:flex;align-items:flex-start;gap:14px;border-radius:10px;padding:1rem 1.25rem;border:1px solid;margin-top:1rem;}
+.urgency-low {background:rgba(16,185,129,.07);border-color:rgba(16,185,129,.3);}
+.urgency-med {background:rgba(245,158,11,.07);border-color:rgba(245,158,11,.3);}
+.urgency-high{background:rgba(239,68,68,.07);border-color:rgba(239,68,68,.3);}
+.urgency-icon{font-size:26px;flex-shrink:0;margin-top:2px;}
+.urgency-lbl {font-size:10px;letter-spacing:.6px;text-transform:uppercase;margin-bottom:3px;font-weight:600;}
+.urgency-low  .urgency-lbl{color:#10b981;}
+.urgency-med  .urgency-lbl{color:#f59e0b;}
+.urgency-high .urgency-lbl{color:#ef4444;}
+.urgency-title{font-size:14px;font-weight:600;color:white;margin-bottom:4px;}
+.urgency-desc {font-size:12px;color:var(--muted);line-height:1.7;}
+
+/* Hospital cards */
+.hosp-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:1rem;transition:border-color .2s;}
+.hosp-card:hover{border-color:rgba(245,158,11,0.35);}
+.hosp-card .h-name{font-size:13px;font-weight:600;color:white;margin-bottom:4px;}
+.hosp-card .h-city{font-size:11px;color:#f59e0b;margin-bottom:8px;display:flex;align-items:center;gap:4px;}
+.hosp-card .h-desc{font-size:12px;color:#94a3b8;line-height:1.65;margin-bottom:10px;}
+.hosp-card .h-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+.hosp-card .h-tag{font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(56,189,248,0.08);color:#38bdf8;border:1px solid rgba(56,189,248,0.18);}
+.hosp-card .h-tag.urg{background:rgba(239,68,68,0.1);color:#f87171;border-color:rgba(239,68,68,0.25);}
+.hosp-card .h-actions{display:flex;gap:6px;}
+.hosp-card .h-btn{font-size:11px;padding:5px 11px;border-radius:5px;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:4px;border:1px solid;}
+.hosp-card .h-btn.map{background:rgba(56,189,248,0.1);color:#38bdf8;border-color:rgba(56,189,248,0.3);}
+.hosp-card .h-btn.call{background:rgba(16,185,129,0.1);color:#34d399;border-color:rgba(16,185,129,0.3);}
+@media(max-width:580px){ #hosp-cards { grid-template-columns: 1fr !important; } }
+
+/* Range guide */
+.range-guide{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;}
+.rg-item{display:flex;align-items:center;gap:4px;font-size:10px;padding:3px 7px;border-radius:4px;border:1px solid;white-space:nowrap;}
+.rg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.rg-normal {background:rgba(52,211,153,0.08);border-color:rgba(52,211,153,0.25);color:#34d399;}
+.rg-pre    {background:rgba(251,191,36,0.08);border-color:rgba(251,191,36,0.25);color:#fbbf24;}
+.rg-high   {background:rgba(248,113,113,0.08);border-color:rgba(248,113,113,0.25);color:#f87171;}
+.rg-under  {background:rgba(148,163,184,0.08);border-color:rgba(148,163,184,0.2);color:#94a3b8;}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+</style>
+</head>
+<body>
+{% raw %}
+
+<nav>
+  <div class="logo"><span class="logo-dot"></span>StrokeSense AI</div>
+  <div class="nav-right">
+    <button class="nav-tab active" onclick="showPage('predict',this)" data-en="🧠 Prediction" data-ar="🧠 التنبؤ">🧠 Prediction</button>
+    <button class="nav-tab" onclick="showPage('chat',this)" data-en="💬 Assistant" data-ar="💬 المساعد">💬 Assistant</button>
+    <button class="nav-tab" onclick="showPage('stats',this)" data-en="📊 Statistics" data-ar="📊 الإحصائيات">📊 Statistics</button>
+    <button class="nav-tab" onclick="showPage('about',this)" data-en="ℹ️ About" data-ar="ℹ️ عن المشروع">ℹ️ About</button>
+    <button class="lang-btn" onclick="toggleLang()" id="lang-btn">عربي</button>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-tag" data-en="Graduation Project · Medical Decision Support" data-ar="مشروع تخرج · نظام دعم القرار الطبي">Graduation Project · Medical Decision Support</div>
+  <h1 data-en="Stroke Risk Prediction<br>Using Artificial Intelligence" data-ar="نظام التنبؤ بالسكتة الدماغية<br>باستخدام الذكاء الاصطناعي">Stroke Risk Prediction<br>Using Artificial Intelligence</h1>
+  <p data-en="Enter patient data and our model — trained on 43,389 cases — will instantly assess the risk of stroke." data-ar="أدخل بيانات المريض وسيحلل النموذج المدرب على 43,389 حالة مستوى خطر الإصابة بالسكتة الدماغية فورياً">Enter patient data and our model — trained on 43,389 cases — will instantly assess the risk of stroke.</p>
+  <div class="hero-stats">
+    <div class="hstat"><div class="num">43,389</div><div class="lbl" data-en="Training Cases" data-ar="حالة تدريب">Training Cases</div></div>
+    <div class="hstat"><div class="num">83%</div><div class="lbl" data-en="Recall Score" data-ar="Recall Score">Recall Score</div></div>
+    <div class="hstat"><div class="num">SMOTE</div><div class="lbl" data-en="Imbalance Handling" data-ar="معالجة الـ Imbalance">Imbalance Handling</div></div>
+    <div class="hstat"><div class="num">9</div><div class="lbl" data-en="Predictive Features" data-ar="متغير تنبؤي">Predictive Features</div></div>
+  </div>
+</div>
+
+<!-- ══ PREDICT ══ -->
+<div id="page-predict" class="page active">
+  <div class="card">
+    <div class="section-title" data-en="Upload Medical Report (Optional)" data-ar="رفع التقرير الطبي (اختياري)">Upload Medical Report (Optional)</div>
+
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"
+         ondragover="event.preventDefault();this.classList.add('drag')"
+         ondragleave="this.classList.remove('drag')"
+         ondrop="handleDrop(event)">
+      <div class="up-icon">📋</div>
+      <p data-en="Drag & drop a <span>medical image or PDF report</span> here" data-ar="اسحب وأفلت <span>صورة تحليل طبي أو ملف PDF</span> هنا">
+        Drag & drop a <span>medical image or PDF report</span> here
+      </p>
+      <p style="margin-top:6px;font-size:11px;" data-en="or click to browse — JPG, PNG, PDF supported" data-ar="أو انقر للاختيار — يدعم JPG, PNG, PDF">or click to browse — JPG, PNG, PDF supported</p>
+      <div class="upload-status" id="upload-status"></div>
+    </div>
+    <input type="file" id="file-input" accept="image/*,.pdf" onchange="handleFile(this.files[0])">
+
+    <div class="section-title" data-en="Patient Data" data-ar="بيانات المريض">Patient Data</div>
+    <div class="form-grid">
+      <div>
+        <label data-en="Gender" data-ar="الجنس">Gender</label>
+        <select id="gender">
+          <option value="Male" data-en="Male" data-ar="ذكر">Male</option>
+          <option value="Female" data-en="Female" data-ar="أنثى">Female</option>
+        </select>
+      </div>
+      <div>
+        <label data-en="Age" data-ar="العمر">Age</label>
+        <input type="number" id="age" placeholder="e.g. 65" min="1" max="82">
+      </div>
+      <div id="wrap-hypertension">
+        <label><span data-en="Hypertension" data-ar="ضغط الدم المرتفع">Hypertension</span><span id="badge-hypertension" class="risk-badge"></span></label>
+        <select id="hypertension" onchange="updateBadge('hypertension')">
+          <option value="0" data-en="No" data-ar="لا">No</option>
+          <option value="1" data-en="Yes" data-ar="نعم">Yes</option>
+        </select>
+      </div>
+      <div id="wrap-heart_disease">
+        <label><span data-en="Heart Disease" data-ar="أمراض القلب">Heart Disease</span><span id="badge-heart_disease" class="risk-badge"></span></label>
+        <select id="heart_disease" onchange="updateBadge('heart_disease')">
+          <option value="0" data-en="No" data-ar="لا">No</option>
+          <option value="1" data-en="Yes" data-ar="نعم">Yes</option>
+        </select>
+      </div>
+      <div id="wrap-glucose">
+        <label><span data-en="Avg Glucose Level (mg/dL)" data-ar="متوسط الجلوكوز (mg/dL)">Avg Glucose Level (mg/dL)</span><span id="badge-glucose" class="risk-badge"></span></label>
+        <input type="number" id="glucose" placeholder="e.g. 100" step="0.1" oninput="updateBadge('glucose')">
+        <div class="range-guide">
+          <span class="rg-item rg-normal"><span class="rg-dot" style="background:#34d399"></span><span data-en="Normal &lt;100" data-ar="طبيعي &lt;100">Normal &lt;100</span></span>
+          <span class="rg-item rg-pre"><span class="rg-dot" style="background:#fbbf24"></span><span data-en="Pre-diabetic 100–126" data-ar="ما قبل السكري 100–126">Pre-diabetic 100–126</span></span>
+          <span class="rg-item rg-high"><span class="rg-dot" style="background:#f87171"></span><span data-en="Diabetic &gt;126" data-ar="سكري &gt;126">Diabetic &gt;126</span></span>
+        </div>
+      </div>
+      <div id="wrap-bmi">
+        <label><span data-en="BMI (or calculate below)" data-ar="BMI (أو احسبه أدناه)">BMI (or calculate below)</span><span id="badge-bmi" class="risk-badge"></span></label>
+        <input type="number" id="bmi" placeholder="e.g. 28.5" step="0.1" oninput="updateBadge('bmi')">
+        <div class="range-guide">
+          <span class="rg-item rg-under"><span class="rg-dot" style="background:#94a3b8"></span><span data-en="Underweight &lt;18.5" data-ar="نحيف &lt;18.5">Underweight &lt;18.5</span></span>
+          <span class="rg-item rg-normal"><span class="rg-dot" style="background:#34d399"></span><span data-en="Normal 18.5–24.9" data-ar="طبيعي 18.5–24.9">Normal 18.5–24.9</span></span>
+          <span class="rg-item rg-pre"><span class="rg-dot" style="background:#fbbf24"></span><span data-en="Overweight 25–29.9" data-ar="زيادة وزن 25–29.9">Overweight 25–29.9</span></span>
+          <span class="rg-item rg-high"><span class="rg-dot" style="background:#f87171"></span><span data-en="Obese ≥30" data-ar="سمنة ≥30">Obese ≥30</span></span>
+        </div>
+      </div>
+      <div id="bmi-calc-toggle" style="grid-column:span 3;margin-top:-6px">
+        <button onclick="toggleBmiCalc()" style="background:none;border:1px dashed var(--border);color:var(--accent);padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit" data-en="🧮 Calculate BMI from height & weight" data-ar="🧮 احسب BMI من الطول والوزن">🧮 Calculate BMI from height &amp; weight</button>
+      </div>
+      <div id="bmi-calc-box" style="grid-column:span 3;display:none;background:rgba(56,189,248,0.05);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:1rem">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end">
+          <div>
+            <label data-en="Weight (kg)" data-ar="الوزن (كغ)">Weight (kg)</label>
+            <input type="number" id="weight-kg" placeholder="e.g. 70" step="0.1" oninput="calcBmi()">
+          </div>
+          <div>
+            <label data-en="Height (cm)" data-ar="الطول (سم)">Height (cm)</label>
+            <input type="number" id="height-cm" placeholder="e.g. 170" step="0.1" oninput="calcBmi()">
+          </div>
+          <div>
+            <label data-en="Calculated BMI" data-ar="BMI المحسوب">Calculated BMI</label>
+            <input type="text" id="bmi-result" placeholder="—" readonly style="background:rgba(56,189,248,0.1);color:var(--accent);font-weight:600">
+          </div>
+          <button onclick="applyBmi()" style="background:var(--accent2);color:white;border:none;padding:9px 14px;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap" data-en="Apply" data-ar="تطبيق">Apply</button>
+        </div>
+        <div id="bmi-category" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
+      </div>
+      <div id="wrap-smoking">
+        <label><span data-en="Smoking Status" data-ar="حالة التدخين">Smoking Status</span><span id="badge-smoking" class="risk-badge"></span></label>
+        <select id="smoking" onchange="updateBadge('smoking')">
+          <option value="never smoked" data-en="Never Smoked" data-ar="لا يدخن">Never Smoked</option>
+          <option value="formerly smoked" data-en="Formerly Smoked" data-ar="مقلع عن التدخين">Formerly Smoked</option>
+          <option value="smokes" data-en="Smokes" data-ar="مدخن">Smokes</option>
+          <option value="Unknown" data-en="Unknown" data-ar="غير معروف">Unknown</option>
+        </select>
+      </div>
+    </div>
+    <button class="predict-btn" onclick="predict()" data-en="⚡ Analyze Risk Level" data-ar="⚡ تحليل مستوى الخطر">⚡ Analyze Risk Level</button>
+  </div>
+
+  <div id="result-box">
+    <div class="result-inner">
+      <div id="risk-ring" class="risk-ring">
+        <span id="risk-pct" class="pct">—</span>
+        <span class="lbl">RISK</span>
+      </div>
+      <div class="result-text">
+        <h3 id="result-title">—</h3>
+        <p id="result-desc">—</p>
+        <div class="tags" id="result-tags"></div>
+      </div>
+    </div>
+  </div>
+
+    <div id="urgency-box" class="urgency-box" style="display:none"></div>
+  <div id="print-btn-wrap" style="display:none;margin-top:1.25rem;justify-content:center;gap:10px;flex-wrap:wrap">
+    <button onclick="printResult()" style="background:rgba(56,189,248,0.1);color:var(--accent);border:1px solid rgba(56,189,248,0.3);padding:10px 24px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500" data-en="🖨️ Print / Save as PDF" data-ar="🖨️ طباعة / حفظ كـ PDF">🖨️ Print / Save as PDF</button>
+    <button onclick="getDietPlan()" id="diet-btn" style="background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(16,185,129,0.05));color:#10b981;border:1px solid rgba(16,185,129,0.4);padding:10px 24px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600" data-en="🥗 Get Diet &amp; Exercise Plan" data-ar="🥗 احصل على خطة غذاء ورياضة">🥗 Get Diet &amp; Exercise Plan</button>
+    <button onclick="showHospitals()" id="hosp-btn" style="background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(245,158,11,0.05));color:#f59e0b;border:1px solid rgba(245,158,11,0.4);padding:10px 24px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600" data-en="🏥 Stroke Centers in Jordan" data-ar="🏥 مراكز علاج الجلطة في الأردن">🏥 Stroke Centers in Jordan</button>
+  </div>
+</div>
+
+<!-- Diet Modal -->
+<div id="diet-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);padding:1rem;overflow-y:auto">
+  <div style="max-width:680px;margin:2rem auto;background:#0d2147;border:1px solid rgba(56,189,248,0.2);border-radius:16px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(56,189,248,0.06));padding:1.25rem 1.5rem;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:34px;background:rgba(16,185,129,0.2);border:1px solid rgba(16,185,129,0.4);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px">🥗</div>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:white" data-en="Personalised Diet &amp; Exercise Plan" data-ar="خطة الغذاء والتمرين الشخصية">Personalised Diet &amp; Exercise Plan</div>
+          <div style="font-size:11px;color:#94a3b8" data-en="Generated by Groq AI · Based on your health data" data-ar="مُولَّدة بواسطة Groq AI · بناءً على بياناتك الصحية">Generated by Groq AI · Based on your health data</div>
+        </div>
+      </div>
+      <button onclick="closeDietModal()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;width:32px;height:32px;border-radius:6px;font-size:16px;cursor:pointer;line-height:1">✕</button>
+    </div>
+    <div id="diet-content" style="padding:1.5rem;min-height:180px;color:#e2e8f0;font-size:13.5px;line-height:1.85">
+      <div id="diet-loading" style="text-align:center;padding:3rem 0;color:#94a3b8">
+        <div style="font-size:32px;margin-bottom:.75rem">⏳</div>
+        <div data-en="Analysing your health profile..." data-ar="جاري تحليل ملفك الصحي...">Analysing your health profile...</div>
+      </div>
+      <div id="diet-text" style="display:none;white-space:pre-wrap"></div>
+    </div>
+    <div style="padding:1rem 1.5rem;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:flex-end;gap:8px">
+      <button onclick="copyDietPlan()" id="copy-diet-btn" style="display:none;background:rgba(56,189,248,0.1);color:var(--accent);border:1px solid rgba(56,189,248,0.3);padding:8px 18px;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500" data-en="📋 Copy Plan" data-ar="📋 نسخ الخطة">📋 Copy Plan</button>
+      <button onclick="closeDietModal()" style="background:rgba(255,255,255,0.06);color:#94a3b8;border:1px solid rgba(255,255,255,0.1);padding:8px 18px;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit" data-en="Close" data-ar="إغلاق">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HOSPITALS MODAL ══ -->
+<div id="hosp-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);padding:1rem;overflow-y:auto">
+  <div style="max-width:780px;margin:2rem auto;background:#0d2147;border:1px solid rgba(245,158,11,0.25);border-radius:16px;overflow:hidden">
+
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,rgba(245,158,11,0.12),rgba(56,189,248,0.06));padding:1.25rem 1.5rem;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;background:rgba(245,158,11,0.2);border:1px solid rgba(245,158,11,0.4);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px">🏥</div>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:white" data-en="Stroke Treatment Centers — Jordan" data-ar="مراكز علاج السكتة الدماغية — الأردن">Stroke Treatment Centers — Jordan</div>
+          <div id="hosp-urgency-label" style="font-size:11px;margin-top:2px"></div>
+        </div>
+      </div>
+      <button onclick="closeHospModal()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;width:32px;height:32px;border-radius:6px;font-size:16px;cursor:pointer;line-height:1">✕</button>
+    </div>
+
+    <!-- Urgency banner -->
+    <div id="hosp-banner" style="padding:.85rem 1.5rem;font-size:13px;font-weight:500;border-bottom:1px solid rgba(255,255,255,0.08)"></div>
+
+    <!-- Cards -->
+    <div id="hosp-cards" style="padding:1.25rem;display:grid;grid-template-columns:1fr 1fr;gap:12px"></div>
+
+    <!-- Footer -->
+    <div style="padding:.9rem 1.5rem;border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <span style="font-size:11px;color:#64748b" data-en="* Data is informational. Call ahead before visiting." data-ar="* البيانات إرشادية. اتصل مسبقاً قبل الزيارة.">* Data is informational. Call ahead before visiting.</span>
+      <button onclick="closeHospModal()" style="background:rgba(255,255,255,0.06);color:#94a3b8;border:1px solid rgba(255,255,255,0.1);padding:8px 18px;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit" data-en="Close" data-ar="إغلاق">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CHAT ══ -->
+<div id="page-chat" class="page">
+  <div class="section-title" data-en="AI Medical Assistant" data-ar="المساعد الطبي الذكي">AI Medical Assistant</div>
+  <div class="chat-wrap">
+    <div class="chat-header">
+      <div class="groq-icon">G</div>
+      <div class="chat-header-text">
+        <h4>Groq Medical Assistant</h4>
+        <p data-en="Powered by Llama 3 · Stroke Specialist" data-ar="مدعوم بـ Llama 3 · متخصص في السكتة الدماغية">Powered by Llama 3 · Stroke Specialist</p>
+      </div>
+      <div class="online-dot"></div>
+    </div>
+    <div id="chat-messages">
+      <div class="msg bot" data-en="Hello! I'm your AI medical assistant specialized in stroke and cardiovascular diseases. How can I help you today?" data-ar="مرحباً! أنا مساعدك الطبي المتخصص في السكتة الدماغية. كيف أقدر أساعدك اليوم؟">Hello! I'm your AI medical assistant specialized in stroke and cardiovascular diseases. How can I help you today?</div>
+    </div>
+    <div class="quick-btns">
+      <button class="qbtn" data-en="Stroke Symptoms" data-ar="أعراض السكتة" onclick="quickMsg(this)">Stroke Symptoms</button>
+      <button class="qbtn" data-en="Prevention Tips" data-ar="نصائح الوقاية" onclick="quickMsg(this)">Prevention Tips</button>
+      <button class="qbtn" data-en="Blood Pressure & Stroke" data-ar="ضغط الدم والسكتة" onclick="quickMsg(this)">Blood Pressure & Stroke</button>
+      <button class="qbtn" data-en="When to go to ER?" data-ar="متى تذهب للطوارئ؟" onclick="quickMsg(this)">When to go to ER?</button>
+    </div>
+    <div class="chat-input-row">
+      <input type="text" id="chat-input" placeholder="Type your medical question..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button id="send-btn" onclick="sendChat()" data-en="Send" data-ar="إرسال">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ STATS ══ -->
+<div id="page-stats" class="page">
+  <div class="section-title" data-en="Dataset Dashboard" data-ar="لوحة إحصائيات البيانات">Dataset Dashboard</div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="s-lbl" data-en="Total Cases" data-ar="إجمالي الحالات">Total Cases</div><div class="s-val">43,389</div><div class="s-sub" data-en="After data cleaning" data-ar="بعد تنظيف البيانات">After data cleaning</div></div>
+    <div class="stat-card"><div class="s-lbl" data-en="Stroke Cases" data-ar="حالات السكتة">Stroke Cases</div><div class="s-val" style="color:#f87171">783</div><div class="s-sub">1.8%</div></div>
+    <div class="stat-card"><div class="s-lbl" data-en="Model Recall" data-ar="دقة الاسترجاع">Model Recall</div><div class="s-val" style="color:#34d399">83%</div><div class="s-sub">5-Fold CV</div></div>
+    <div class="stat-card"><div class="s-lbl" data-en="Model Accuracy" data-ar="دقة النموذج">Model Accuracy</div><div class="s-val" style="color:#60a5fa">76%</div><div class="s-sub" data-en="On test set" data-ar="على بيانات الاختبار">On test set</div></div>
+  </div>
+
+  <!-- 1. Gender -->
+  <div class="charts-grid" style="margin-bottom:14px">
+    <div class="chart-card">
+      <div class="chart-title" data-en="Gender Distribution" data-ar="توزيع الجنس">Gender Distribution</div>
+      <div style="display:flex;gap:12px;margin-bottom:10px;font-size:11px;color:var(--muted)">
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#818cf8;display:inline-block"></span><span data-en="Female 59.2%" data-ar="انثى 59.2%">Female 59.2%</span></span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#38bdf8;display:inline-block"></span><span data-en="Male 40.8%" data-ar="ذكر 40.8%">Male 40.8%</span></span>
+      </div>
+      <div style="position:relative;height:210px"><canvas id="ch1"></canvas></div>
+    </div>
+
+    <!-- 2. Age -->
+    <div class="chart-card">
+      <div class="chart-title" data-en="Stroke Rate by Age Group" data-ar="نسبة السكتة حسب الفئة العمرية">Stroke Rate by Age Group</div>
+      <div style="display:flex;gap:12px;margin-bottom:10px;font-size:11px;color:var(--muted)">
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#38bdf8;display:inline-block"></span><span data-en="No Stroke" data-ar="بدون سكتة">No Stroke</span></span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#f87171;display:inline-block"></span><span data-en="Stroke" data-ar="سكتة">Stroke</span></span>
+      </div>
+      <div style="position:relative;height:210px"><canvas id="ch2"></canvas></div>
+    </div>
+  </div>
+
+  <!-- 3. Hypertension + 4. Heart Disease -->
+  <div class="charts-grid" style="margin-bottom:14px">
+    <div class="chart-card">
+      <div class="chart-title" data-en="Hypertension vs Stroke Rate (%)" data-ar="ضغط الدم مقابل نسبة السكتة (%)">Hypertension vs Stroke Rate (%)</div>
+      <div style="display:flex;gap:12px;margin-bottom:8px;font-size:11px;color:var(--muted)">
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#60a5fa;display:inline-block"></span><span data-en="No Stroke" data-ar="بدون سكتة">No Stroke</span></span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#f87171;display:inline-block"></span><span data-en="Stroke" data-ar="سكتة">Stroke</span></span>
+      </div>
+      <div style="position:relative;height:180px"><canvas id="ch3"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title" data-en="Heart Disease vs Stroke Rate (%)" data-ar="امراض القلب مقابل نسبة السكتة (%)">Heart Disease vs Stroke Rate (%)</div>
+      <div style="display:flex;gap:12px;margin-bottom:8px;font-size:11px;color:var(--muted)">
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#60a5fa;display:inline-block"></span><span data-en="No Stroke" data-ar="بدون سكتة">No Stroke</span></span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#f87171;display:inline-block"></span><span data-en="Stroke" data-ar="سكتة">Stroke</span></span>
+      </div>
+      <div style="position:relative;height:180px"><canvas id="ch4"></canvas></div>
+    </div>
+  </div>
+
+  <!-- 5. Avg Glucose -->
+  <div class="chart-card" style="margin-bottom:14px">
+    <div class="chart-title" data-en="Avg Glucose Level vs Stroke Rate (%)" data-ar="متوسط الجلوكوز مقابل نسبة السكتة (%)">Avg Glucose Level vs Stroke Rate (%)</div>
+    <div style="display:flex;gap:12px;margin-bottom:10px;font-size:11px;color:var(--muted)">
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#34d399;display:inline-block"></span><span data-en="No Stroke" data-ar="بدون سكتة">No Stroke</span></span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#f87171;display:inline-block"></span><span data-en="Stroke" data-ar="سكتة">Stroke</span></span>
+    </div>
+    <div style="position:relative;height:200px"><canvas id="ch5"></canvas></div>
+  </div>
+
+  <!-- 6. BMI -->
+  <div class="chart-card" style="margin-bottom:14px">
+    <div class="chart-title" data-en="Body Mass Index (BMI) vs Stroke Rate (%)" data-ar="مؤشر كتلة الجسم (BMI) مقابل نسبة السكتة (%)">Body Mass Index (BMI) vs Stroke Rate (%)</div>
+    <div style="display:flex;gap:12px;margin-bottom:10px;font-size:11px;color:var(--muted)">
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#60a5fa;display:inline-block"></span><span data-en="No Stroke %" data-ar="بدون سكتة %">No Stroke %</span></span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#f87171;display:inline-block"></span><span data-en="Stroke %" data-ar="سكتة %">Stroke %</span></span>
+    </div>
+    <div style="position:relative;height:200px"><canvas id="ch6"></canvas></div>
+  </div>
+
+  <!-- 7. Smoking Status (2 views only) -->
+  <div class="chart-card">
+    <div class="section-title" style="margin-bottom:1.1rem" data-en="Smoking Status &amp; Stroke" data-ar="حالة التدخين والسكتة الدماغية">Smoking Status &amp; Stroke</div>
+    <div class="charts-grid">
+      <div>
+        <div style="font-size:12px;font-weight:500;color:var(--muted);margin-bottom:8px" data-en="Stroke rate per smoking category (%)" data-ar="نسبة السكتة لكل فئة تدخين (%)">Stroke rate per smoking category (%)</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;font-size:11px;color:var(--muted);flex-wrap:wrap">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:#34d399;display:inline-block"></span><span data-en="No Stroke" data-ar="بدون سكتة">No Stroke</span></span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:#f87171;display:inline-block"></span><span data-en="Stroke" data-ar="سكتة">Stroke</span></span>
+        </div>
+        <div style="position:relative;height:200px"><canvas id="ch7"></canvas></div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:500;color:var(--muted);margin-bottom:8px" data-en="Smoking category share in dataset" data-ar="توزيع حالة التدخين في البيانات">Smoking category share in dataset</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;font-size:11px;color:var(--muted);flex-wrap:wrap">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#34d399;display:inline-block"></span>Never 53.3%</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#fbbf24;display:inline-block"></span>Former 24.9%</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#f87171;display:inline-block"></span>Active 21.8%</span>
+        </div>
+        <div style="position:relative;height:200px"><canvas id="ch8"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ══ ABOUT ══ -->
+<div id="page-about" class="page">
+  <div class="section-title" data-en="About the Project" data-ar="عن المشروع">About the Project</div>
+  <div class="card" style="margin-bottom:1.5rem">
+    <p style="font-size:14px;color:var(--muted);line-height:1.9" data-en="This graduation project aims to build an AI system for early prediction of stroke risk, using real medical data and modern machine learning techniques. The model was trained on over 43,000 medical cases with advanced handling of data imbalance using SMOTE." data-ar="هذا المشروع هو مشروع تخرج يهدف إلى بناء نظام ذكاء اصطناعي للتنبؤ المبكر بخطر الإصابة بالسكتة الدماغية، باستخدام بيانات طبية حقيقية وتقنيات تعلم الآلة الحديثة. تم تدريب النموذج على أكثر من 43,000 حالة طبية مع معالجة متقدمة باستخدام تقنية SMOTE.">
+      This graduation project aims to build an AI system for early prediction of stroke risk, using real medical data and modern machine learning techniques. The model was trained on over 43,000 medical cases with advanced handling of data imbalance using SMOTE.
+    </p>
+  </div>
+  <div class="section-title" data-en="Technical Methodology" data-ar="المنهجية التقنية">Technical Methodology</div>
+  <div class="model-info" style="margin-bottom:1.5rem">
+    <div class="info-item"><div class="i-lbl" data-en="Algorithm" data-ar="الخوارزمية">Algorithm</div><div class="i-val">Logistic Regression</div></div>
+    <div class="info-item"><div class="i-lbl" data-en="Imbalance Handling" data-ar="معالجة الـ Imbalance">Imbalance Handling</div><div class="i-val">SMOTE</div></div>
+    <div class="info-item"><div class="i-lbl">Recall Score</div><div class="i-val">83%</div></div>
+    <div class="info-item"><div class="i-lbl">Cross-Validation</div><div class="i-val">5-Fold Stratified</div></div>
+    <div class="info-item"><div class="i-lbl" data-en="Training Data Size" data-ar="حجم بيانات التدريب">Training Data Size</div><div class="i-val">34,711</div></div>
+    <div class="info-item"><div class="i-lbl" data-en="Test Data Size" data-ar="حجم بيانات الاختبار">Test Data Size</div><div class="i-val">8,678</div></div>
+  </div>
+  <div class="section-title" data-en="Project Team" data-ar="فريق العمل">Project Team</div>
+  <div class="team-grid">
+    <div class="team-card"><div class="avatar">MR</div><h4>Mohammad Reehan</h4></div>
+    <div class="team-card"><div class="avatar">AZ</div><h4>Abdalaziz Zuhair</h4></div>
+    <div class="team-card"><div class="avatar">KW</div><h4>Khalid Waleed</h4></div>
+  </div>
+</div>
+
+<script>
+// ── Risk Badges ────────────────────────────────────────
+const BADGE_RULES = {
+  hypertension: v => v=='1' ? 'high' : 'low',
+  heart_disease: v => v=='1' ? 'high' : 'low',
+  glucose: v => { const n=parseFloat(v); if(!v||isNaN(n)) return ''; return n>126?'high':n>=100?'med':'low'; },
+  bmi:     v => { const n=parseFloat(v); if(!v||isNaN(n)) return ''; return n>=30?'high':n>=25?'med':'low'; },
+  smoking: v => v==='smokes'?'high':v==='formerly smoked'?'med':'low'
+};
+const BADGE_LABELS = {
+  en: {high:'High risk',med:'Moderate',low:'Low risk'},
+  ar: {high:'مرتفع',med:'معتدل',low:'منخفض'}
+};
+
+function updateBadge(field) {
+  const el = document.getElementById(field);
+  const badge = document.getElementById('badge-'+field);
+  const wrap  = document.getElementById('wrap-'+field);
+  if (!el||!badge||!wrap) return;
+  const level = BADGE_RULES[field](el.value);
+  if (!level) { badge.textContent=''; badge.className='risk-badge'; wrap.className=''; return; }
+  badge.textContent = BADGE_LABELS[currentLang][level];
+  badge.className = 'risk-badge rb-'+level;
+  wrap.className  = 'field-'+level;
+}
+
+function initBadges() {
+  ['hypertension','heart_disease','glucose','bmi','smoking'].forEach(updateBadge);
+}
+
+// ── Urgency Level ──────────────────────────────────────
+function getUrgencyContent(riskLevel, ar) {
+  const map = {
+    High: {
+      cls:'urgency-high', icon:'🚨',
+      lbl: ar?'مستوى الإلحاح — عالي':'Urgency Level — High',
+      title: ar?'راجع طبيباً متخصصاً فوراً':'See a specialist immediately',
+      desc: ar?'عوامل خطر متعددة نشطة. يُنصح بالفحص الطبي خلال 24-48 ساعة وعدم تأجيل الرعاية الصحية.':'Multiple active risk factors detected. Seek medical evaluation within 24-48 hours.'
+    },
+    Medium: {
+      cls:'urgency-med', icon:'⚠️',
+      lbl: ar?'مستوى الإلحاح — متوسط':'Urgency Level — Moderate',
+      title: ar?'احجز موعداً طبياً قريباً':'Schedule a medical appointment soon',
+      desc: ar?'بعض عوامل الخطر تحتاج متابعة. يُنصح بمراجعة الطبيب خلال أسبوع إلى أسبوعين مع مراقبة المؤشرات الحيوية.':'Some risk factors need follow-up. Consult your doctor within 1-2 weeks and monitor vital signs.'
+    },
+    Low: {
+      cls:'urgency-low', icon:'✅',
+      lbl: ar?'مستوى الإلحاح — منخفض':'Urgency Level — Low',
+      title: ar?'استمر في نمط حياتك الصحي':'Maintain your healthy lifestyle',
+      desc: ar?'لا توجد عوامل خطر نشطة مقلقة. يُنصح بالفحص الطبي الدوري السنوي للاطمئنان.':'No alarming active risk factors. Annual preventive check-up is recommended.'
+    }
+  };
+  return map[riskLevel];
+}
+
+
+let currentLang = 'en';
+function toggleLang() {
+  currentLang = currentLang === 'en' ? 'ar' : 'en';
+  const body = document.body;
+  const btn  = document.getElementById('lang-btn');
+  if (currentLang === 'ar') {
+    body.classList.add('ar'); body.setAttribute('dir','rtl'); body.setAttribute('lang','ar');
+    btn.textContent = 'English';
+  } else {
+    body.classList.remove('ar'); body.setAttribute('dir','ltr'); body.setAttribute('lang','en');
+    btn.textContent = 'عربي';
+  }
+  document.querySelectorAll('[data-en]').forEach(el => {
+    const txt = el.getAttribute('data-' + currentLang);
+    if (txt) el.innerHTML = txt;
+  });
+  document.getElementById('age').placeholder     = currentLang==='ar'? 'مثال: 65'  : 'e.g. 65';
+  document.getElementById('glucose').placeholder = currentLang==='ar'? 'مثال: 100' : 'e.g. 100';
+  document.getElementById('bmi').placeholder     = currentLang==='ar'? 'مثال: 28.5': 'e.g. 28.5';
+  document.getElementById('chat-input').placeholder = currentLang==='ar'? 'اكتب سؤالك الطبي هنا...' : 'Type your medical question...';
+  initBadges();
+}
+
+document.addEventListener('DOMContentLoaded', initBadges);
+
+// ── Page navigation ────────────────────────────────────
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── File upload / drag & drop ──────────────────────────
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+}
+
+function handleFile(file) {
+  if (!file) return;
+  const status = document.getElementById('upload-status');
+  const isImg  = file.type.startsWith('image/');
+  const isPDF  = file.type === 'application/pdf';
+  if (!isImg && !isPDF) {
+    status.textContent = currentLang==='ar'? '⚠️ يرجى رفع صورة أو ملف PDF فقط' : '⚠️ Please upload an image or PDF file only';
+    return;
+  }
+  status.textContent = currentLang==='ar'? '⏳ جاري تحليل الملف...' : '⏳ Analyzing file...';
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('type', isPDF ? 'pdf' : 'image');
+
+  fetch('/extract', { method:'POST', body: formData })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success && data.data) {
+        fillForm(data.data);
+        status.textContent = currentLang==='ar'? '✅ تم استخراج البيانات بنجاح!' : '✅ Data extracted successfully!';
+      } else {
+        status.textContent = currentLang==='ar'? '⚠️ لم يتم العثور على بيانات كافية في الملف' : '⚠️ Could not extract sufficient data from file';
+      }
+    })
+    .catch(() => {
+      status.textContent = currentLang==='ar'? '❌ خطأ في تحليل الملف' : '❌ Error analyzing file';
+    });
+}
+
+function fillForm(d) {
+  if (d.age)               document.getElementById('age').value     = d.age;
+  if (d.avg_glucose_level) document.getElementById('glucose').value = d.avg_glucose_level;
+  if (d.bmi)               document.getElementById('bmi').value     = d.bmi;
+  if (d.gender) {
+    const g = document.getElementById('gender');
+    if (d.gender === 'Male' || d.gender === 'Female') g.value = d.gender;
+  }
+  if (d.hypertension !== null && d.hypertension !== undefined)
+    document.getElementById('hypertension').value = d.hypertension;
+  if (d.heart_disease !== null && d.heart_disease !== undefined)
+    document.getElementById('heart_disease').value = d.heart_disease;
+  if (d.smoking_status) {
+    const sm = document.getElementById('smoking');
+    const val = d.smoking_status.toLowerCase();
+    if (['never smoked','formerly smoked','smokes','unknown'].includes(val)) sm.value = val;
+  }
+  // تحديث badges بعد التعبئة التلقائية
+  initBadges();
+}
+
+// ── Prediction ─────────────────────────────────────────
+async function predict() {
+  const age = document.getElementById('age').value;
+  const glucose = document.getElementById('glucose').value;
+  const bmi = document.getElementById('bmi').value;
+  if (!age || !glucose || !bmi) {
+    alert(currentLang==='ar'? 'يرجى تعبئة جميع الحقول' : 'Please fill in all fields');
+    return;
+  }
+  const payload = {
+    gender: document.getElementById('gender').value,
+    age: parseFloat(age),
+    hypertension: parseInt(document.getElementById('hypertension').value),
+    heart_disease: parseInt(document.getElementById('heart_disease').value),
+    avg_glucose_level: parseFloat(glucose),
+    bmi: parseFloat(bmi),
+    smoking_status: document.getElementById('smoking').value
+  };
+  const btn = document.querySelector('.predict-btn');
+  btn.textContent = currentLang==='ar'? '⏳ جاري التحليل...' : '⏳ Analyzing...';
+  btn.disabled = true;
+  try {
+    const res  = await fetch('/predict', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    const data = await res.json();
+    showResult(data, payload);
+  } catch(e) {
+    alert(currentLang==='ar'? 'خطأ في الاتصال بالسيرفر' : 'Server connection error');
+  } finally {
+    btn.textContent = currentLang==='ar'? '⚡ تحليل مستوى الخطر' : '⚡ Analyze Risk Level';
+    btn.disabled = false;
+  }
+}
+
+function showResult(data, payload) {
+  const box   = document.getElementById('result-box');
+  const ring  = document.getElementById('risk-ring');
+  const pct   = document.getElementById('risk-pct');
+  const title = document.getElementById('result-title');
+  const desc  = document.getElementById('result-desc');
+  const tags  = document.getElementById('result-tags');
+
+  box.style.display = 'block';
+  pct.textContent   = data.probability + '%';
+  ring.className    = 'risk-ring risk-' + data.risk_level.toLowerCase();
+
+  const ar = currentLang === 'ar';
+  const info = {
+    Low:    { title: ar?'✅ خطر منخفض للسكتة الدماغية':'✅ Low Stroke Risk', desc: ar?'النتائج تشير إلى احتمالية منخفضة. استمر في نمط الحياة الصحي.':'Results indicate a low probability. Continue your healthy lifestyle.' },
+    Medium: { title: ar?'⚠️ خطر متوسط للسكتة الدماغية':'⚠️ Medium Stroke Risk', desc: ar?'يُنصح بمراجعة الطبيب وإجراء فحوصات دورية.':'Medical consultation and periodic check-ups are recommended.' },
+    High:   { title: ar?'🚨 خطر مرتفع للسكتة الدماغية':'🚨 High Stroke Risk', desc: ar?'يُنصح بمراجعة طبيب متخصص في أقرب وقت.':'Urgent specialist consultation is strongly recommended.' }
+  };
+  title.textContent = info[data.risk_level].title;
+  desc.textContent  = info[data.risk_level].desc;
+
+  tags.innerHTML = '';
+  const tf = (en, ar2) => ar ? ar2 : en;
+  if (payload.hypertension)                addTag(tags, tf('High BP','ضغط مرتفع'));
+  if (payload.heart_disease)               addTag(tags, tf('Heart Disease','أمراض القلب'));
+  if (payload.age > 60)                    addTag(tags, tf('Age > 60','العمر > 60'));
+  if (payload.avg_glucose_level > 126)     addTag(tags, tf('High Glucose','جلوكوز مرتفع'));
+  if (payload.bmi > 30)                    addTag(tags, tf('High BMI','BMI مرتفع'));
+  if (payload.smoking_status === 'smokes') addTag(tags, tf('Active Smoker','مدخن نشط'));
+  if (payload.smoking_status === 'formerly smoked') addTag(tags, tf('Former Smoker','مدخن سابق'));
+
+  // Urgency box
+  const ub = document.getElementById('urgency-box');
+  const u  = getUrgencyContent(data.risk_level, ar);
+  ub.className = 'urgency-box ' + u.cls;
+  ub.style.display = 'flex';
+  ub.innerHTML = `<div class="urgency-icon">${u.icon}</div><div><div class="urgency-lbl">${u.lbl}</div><div class="urgency-title">${u.title}</div><div class="urgency-desc">${u.desc}</div></div>`;
+
+  box.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  const pw = document.getElementById('print-btn-wrap');
+  pw.style.display = 'flex';
+  // store for diet plan
+  window._lastPayload = payload;
+  window._lastRisk = data.risk_level;
+  window._lastProb = data.probability;
+}
+
+function addTag(c, t) {
+  const el = document.createElement('span');
+  el.className = 'tag'; el.textContent = t; c.appendChild(el);
+}
+
+// ── Chat ───────────────────────────────────────────────
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg   = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  addMsg(msg, 'user');
+  const typing = addMsg('...', 'bot');
+  try {
+    const res  = await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ message: msg, lang: currentLang }) });
+    const data = await res.json();
+    typing.remove();
+    addMsg(data.reply || data.error, 'bot');
+  } catch(e) {
+    typing.remove();
+    addMsg(currentLang==='ar'? 'تعذر الاتصال بـ Groq' : 'Could not connect to Groq', 'bot');
+  }
+}
+
+function quickMsg(btn) {
+  const txt = btn.getAttribute('data-' + currentLang) || btn.textContent;
+  document.getElementById('chat-input').value = txt;
+  sendChat();
+}
+
+function addMsg(text, cls) {
+  const box = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + cls; div.textContent = text;
+  box.appendChild(div); box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+// ── BMI Calculator ──────────────────────────────────────
+function toggleBmiCalc() {
+  const box = document.getElementById('bmi-calc-box');
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+function calcBmi() {
+  const w = parseFloat(document.getElementById('weight-kg').value);
+  const h = parseFloat(document.getElementById('height-cm').value) / 100;
+  if (!w || !h || h <= 0) { document.getElementById('bmi-result').value = ''; return; }
+  const bmi = (w / (h * h)).toFixed(1);
+  document.getElementById('bmi-result').value = bmi;
+  const ar = currentLang === 'ar';
+  let cat = '';
+  if      (bmi < 18.5) cat = ar ? '⚪ نحيف' : '⚪ Underweight';
+  else if (bmi < 25)   cat = ar ? '🟢 طبيعي' : '🟢 Normal';
+  else if (bmi < 30)   cat = ar ? '🟡 زيادة وزن' : '🟡 Overweight';
+  else                 cat = ar ? '🔴 سمنة' : '🔴 Obese';
+  document.getElementById('bmi-category').textContent = (ar ? 'التصنيف: ' : 'Category: ') + cat;
+}
+
+function applyBmi() {
+  const val = document.getElementById('bmi-result').value;
+  if (val) {
+    document.getElementById('bmi').value = val;
+    document.getElementById('bmi-calc-box').style.display = 'none';
+  }
+}
+
+// -- Print / Save PDF
+function printResult() {
+  const ar = currentLang === 'ar';
+  const prob  = document.getElementById('risk-pct').textContent;
+  const title = document.getElementById('result-title').textContent;
+  const desc  = document.getElementById('result-desc').textContent;
+  const tags  = Array.from(document.getElementById('result-tags').children).map(t => t.textContent).join(' | ');
+  const gender    = document.getElementById('gender').value;
+  const age       = document.getElementById('age').value;
+  const hyperVal  = document.getElementById('hypertension').value;
+  const heartVal  = document.getElementById('heart_disease').value;
+  const hyper     = hyperVal == '1' ? (ar?'نعم':'Yes') : (ar?'لا':'No');
+  const heart     = heartVal == '1' ? (ar?'نعم':'Yes') : (ar?'لا':'No');
+  const glucoseVal= parseFloat(document.getElementById('glucose').value);
+  const bmiVal    = parseFloat(document.getElementById('bmi').value);
+  const glucose   = document.getElementById('glucose').value;
+  const bmi       = document.getElementById('bmi').value;
+  const smoking   = document.getElementById('smoking').value;
+  const rLvl = {
+    hypertension: hyperVal=='1'?'high':'low',
+    heart:        heartVal=='1'?'high':'low',
+    glucose:      glucoseVal>126?'high':glucoseVal>=100?'med':'low',
+    bmi:          bmiVal>=30?'high':bmiVal>=25?'med':'low',
+    smoking:      smoking==='smokes'?'high':smoking==='formerly smoked'?'med':'low'
+  };
+  const rColor = {high:'#dc2626',med:'#d97706',low:'#059669'};
+  const rBg    = {high:'#fef2f2',med:'#fffbeb',low:'#f0fdf4'};
+  const rLbl   = {en:{high:'High risk',med:'Moderate',low:'Low risk'},ar:{high:'murtafi3',med:'mu3tadil',low:'munkhafid'}};
+  const rAr    = {high:'مرتفع',med:'معتدل',low:'منخفض'};
+  const rEn    = {high:'High risk',med:'Moderate',low:'Low risk'};
+  const badge  = (k) => `<span style="font-size:11px;padding:2px 8px;border-radius:4px;font-weight:600;background:${rBg[rLvl[k]]};color:${rColor[rLvl[k]]};border:1px solid ${rColor[rLvl[k]]}44">${ar?rAr[rLvl[k]]:rEn[rLvl[k]]}</span>`;
+  const probNum  = parseFloat(prob);
+  const urgLevel = probNum >= 60 ? 'high' : probNum >= 30 ? 'med' : 'low';
+  const urgMap = {
+    high:{ icon:'🚨', bg:'#fef2f2', border:'#fca5a5', color:'#b91c1c',
+      lbl:   ar?'مستوى الإلحاح — عالي':'Urgency Level — High',
+      title: ar?'راجع طبيباً متخصصاً فوراً':'See a specialist immediately',
+      desc:  ar?'عوامل خطر متعددة نشطة. يُنصح بالفحص الطبي خلال 24-48 ساعة.':'Multiple active risk factors. Seek medical evaluation within 24-48 hours.' },
+    med: { icon:'⚠️', bg:'#fffbeb', border:'#fcd34d', color:'#92400e',
+      lbl:   ar?'مستوى الإلحاح — متوسط':'Urgency Level — Moderate',
+      title: ar?'احجز موعداً طبياً قريباً':'Schedule a medical appointment soon',
+      desc:  ar?'يُنصح بمراجعة الطبيب خلال أسبوع إلى أسبوعين مع مراقبة المؤشرات الحيوية.':'Consult your doctor within 1-2 weeks and monitor vital signs.' },
+    low: { icon:'✅', bg:'#f0fdf4', border:'#86efac', color:'#166534',
+      lbl:   ar?'مستوى الإلحاح — منخفض':'Urgency Level — Low',
+      title: ar?'استمر في نمط حياتك الصحي':'Maintain your healthy lifestyle',
+      desc:  ar?'لا توجد عوامل خطر نشطة مقلقة. الفحص الدوري السنوي كافٍ.':'No alarming risk factors. Annual preventive check-up is sufficient.' }
+  };
+  const u = urgMap[urgLevel];
+  const now = new Date().toLocaleDateString(ar ? 'ar-SA' : 'en-US', {year:'numeric',month:'long',day:'numeric'});
+
+  const html = `<!DOCTYPE html><html dir="${ar?'rtl':'ltr'}" lang="${ar?'ar':'en'}">
+<head><meta charset="UTF-8">
+<style>
+  body{font-family:${ar?"'Arial','Tahoma'":'Arial'},sans-serif;padding:40px;color:#1e293b;direction:${ar?'rtl':'ltr'}}
+  .header{text-align:center;border-bottom:3px solid #0ea5e9;padding-bottom:20px;margin-bottom:30px}
+  .header h1{color:#0ea5e9;font-size:24px;margin:0 0 6px}
+  .header p{color:#64748b;font-size:13px;margin:0}
+  .risk-box{text-align:center;padding:24px;border-radius:12px;margin:20px 0;
+    background:${probNum>=60?'#fef2f2':probNum>=30?'#fffbeb':'#f0fdf4'};
+    border:2px solid ${probNum>=60?'#ef4444':probNum>=30?'#f59e0b':'#10b981'}}
+  .risk-pct{font-size:48px;font-weight:bold;color:${probNum>=60?'#ef4444':probNum>=30?'#f59e0b':'#10b981'}}
+  .risk-title{font-size:18px;font-weight:600;margin-top:8px}
+  .risk-desc{font-size:13px;color:#64748b;margin-top:6px}
+  .urgency-section{display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border-radius:10px;margin:20px 0;background:${u.bg};border:1.5px solid ${u.border}}
+  .urgency-icon{font-size:28px;flex-shrink:0}
+  .urgency-lbl{font-size:10px;letter-spacing:.6px;text-transform:uppercase;font-weight:700;color:${u.color};margin-bottom:4px}
+  .urgency-title{font-size:15px;font-weight:600;color:#1e293b;margin-bottom:4px}
+  .urgency-desc{font-size:12px;color:#475569;line-height:1.7}
+  table{width:100%;border-collapse:collapse;margin:20px 0}
+  th{background:#f1f5f9;padding:10px 14px;text-align:${ar?'right':'left'};font-size:13px;color:#475569;border:1px solid #e2e8f0}
+  td{padding:10px 14px;font-size:13px;border:1px solid #e2e8f0;vertical-align:middle}
+  .td-val{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+  .tag{background:#eff6ff;color:#2563eb;padding:4px 10px;border-radius:4px;font-size:12px;border:1px solid #bfdbfe}
+  .footer{margin-top:40px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center}
+  @media print{body{padding:20px}}
+</style>
+</head><body>
+<div class="header">
+  <h1>StrokeSense AI</h1>
+  <p>${ar?'تقرير تحليل خطر السكتة الدماغية':'Stroke Risk Analysis Report'} — ${now}</p>
+</div>
+
+<div class="risk-box">
+  <div class="risk-pct">${prob}</div>
+  <div class="risk-title">${title}</div>
+  <div class="risk-desc">${desc}</div>
+</div>
+
+<div class="urgency-section">
+  <div class="urgency-icon">${u.icon}</div>
+  <div>
+    <div class="urgency-lbl">${u.lbl}</div>
+    <div class="urgency-title">${u.title}</div>
+    <div class="urgency-desc">${u.desc}</div>
+  </div>
+</div>
+
+<table>
+  <tr><th colspan="2">${ar?'بيانات المريض':'Patient Data'}</th></tr>
+  <tr><td>${ar?'الجنس':'Gender'}</td><td>${gender}</td></tr>
+  <tr><td>${ar?'العمر':'Age'}</td><td>${age}</td></tr>
+  <tr><td>${ar?'ضغط الدم':'Hypertension'}</td><td><div class="td-val">${hyper} ${badge('hypertension')}</div></td></tr>
+  <tr><td>${ar?'أمراض القلب':'Heart Disease'}</td><td><div class="td-val">${heart} ${badge('heart')}</div></td></tr>
+  <tr><td>${ar?'متوسط الجلوكوز':'Avg Glucose'}</td><td>
+    <div class="td-val">${glucose} mg/dL ${badge('glucose')}</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
+      <span style="font-size:10px;padding:2px 7px;border-radius:4px;background:#f0fdf4;color:#16a34a;border:1px solid #86efac">${ar?'طبيعي':'Normal'} &lt;100</span>
+      <span style="font-size:10px;padding:2px 7px;border-radius:4px;background:#fffbeb;color:#d97706;border:1px solid #fcd34d">${ar?'ما قبل السكري':'Pre-diabetic'} 100–126</span>
+      <span style="font-size:10px;padding:2px 7px;border-radius:4px;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5">${ar?'سكري':'Diabetic'} &gt;126</span>
+    </div>
+  </td></tr>
+  <tr><td>BMI</td><td>
+    <div class="td-val">${bmi} ${badge('bmi')}</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
+      <span style="font-size:10px;padding:2px 7px;border-radius:4px;background:#f8fafc;color:#64748b;border:1px solid #cbd5e1">${ar?'نحيف':'Underweight'} &lt;18.5</span>
+      <span style="font-size:10px;padding:2px 7px;border-radius:4px;background:#f0fdf4;color:#16a34a;border:1px solid #86efac">${ar?'طبيعي':'Normal'} 18.5–24.9</span>
+      <span style="font-size:10px;padding:2px 7px;border-radius:4px;background:#fffbeb;color:#d97706;border:1px solid #fcd34d">${ar?'زيادة وزن':'Overweight'} 25–29.9</span>
+      <span style="font-size:10px;padding:2px 7px;border-radius:4px;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5">${ar?'سمنة':'Obese'} ≥30</span>
+    </div>
+  </td></tr>
+  <tr><td>${ar?'حالة التدخين':'Smoking Status'}</td><td><div class="td-val">${smoking} ${badge('smoking')}</div></td></tr>
+</table>
+
+${tags ? `<div><b>${ar?'عوامل الخطر النشطة:':'Active Risk Factors:'}</b>
+<div class="tags">${tags.split(' | ').map(t=>`<span class="tag">${t}</span>`).join('')}</div></div>` : ''}
+
+<div class="footer">
+  ${ar
+    ? 'هذا التقرير مُولَّد بواسطة StrokeSense AI لأغراض تعليمية فقط وليس بديلاً عن الاستشارة الطبية المتخصصة.'
+    : 'This report is generated by StrokeSense AI for educational purposes only and is not a substitute for professional medical advice.'}
+</div>
+</body></html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(() => w.print(), 400);
+}
+// ── Diet & Exercise Plan ───────────────────────────────
+async function getDietPlan() {
+  const p   = window._lastPayload;
+  const risk = window._lastRisk;
+  const prob = window._lastProb;
+  if (!p) return;
+
+  const ar = currentLang === 'ar';
+  const modal   = document.getElementById('diet-modal');
+  const loading = document.getElementById('diet-loading');
+  const dietTxt = document.getElementById('diet-text');
+  const copyBtn = document.getElementById('copy-diet-btn');
+
+  modal.style.display   = 'block';
+  document.body.style.overflow = 'hidden';
+  loading.style.display = 'block';
+  dietTxt.style.display = 'none';
+  copyBtn.style.display = 'none';
+  dietTxt.textContent   = '';
+
+  // Translate values for prompt
+  const smokingMap = {
+    'never smoked': ar?'لم يدخن مطلقاً':'never smoked',
+    'formerly smoked': ar?'مقلع عن التدخين':'formerly smoked',
+    'smokes': ar?'مدخن نشط':'active smoker',
+    'Unknown': ar?'غير معروف':'unknown'
+  };
+  const bmiCat = p.bmi < 18.5 ? (ar?'نحيف':'Underweight') : p.bmi < 25 ? (ar?'طبيعي':'Normal') : p.bmi < 30 ? (ar?'زيادة وزن':'Overweight') : (ar?'سمنة':'Obese');
+  const glucoseCat = p.avg_glucose_level < 100 ? (ar?'طبيعي':'Normal') : p.avg_glucose_level <= 126 ? (ar?'ما قبل السكري':'Pre-diabetic') : (ar?'مرتفع/سكري':'Diabetic range');
+
+  const prompt = ar
+    ? `أنت خبير تغذية وإعادة تأهيل متخصص في أمراض القلب والأوعية الدموية والسكتة الدماغية.
+
+بيانات المريض:
+• الجنس: ${p.gender === 'Male' ? 'ذكر' : 'أنثى'}
+• العمر: ${p.age} سنة
+• ضغط الدم المرتفع: ${p.hypertension ? 'نعم' : 'لا'}
+• أمراض القلب: ${p.heart_disease ? 'نعم' : 'لا'}
+• متوسط الجلوكوز: ${p.avg_glucose_level} mg/dL (${glucoseCat})
+• BMI: ${p.bmi} (${bmiCat})
+• التدخين: ${smokingMap[p.smoking_status] || p.smoking_status}
+• نسبة خطر السكتة الدماغية: ${prob}% (${risk === 'High' ? 'مرتفع' : risk === 'Medium' ? 'متوسط' : 'منخفض'})
+
+المطلوب: اكتب خطة مخصصة وعملية تشمل:
+
+🥗 الحمية الغذائية:
+- الأطعمة الموصى بها (مع أمثلة عملية)
+- الأطعمة الممنوعة أو المحدودة
+- نموذج يوم غذائي كامل (إفطار، غداء، عشاء، سناك)
+- نصائح خاصة بحالته
+
+🏃 خطة التمرين:
+- نوع التمارين المناسبة لحالته
+- المدة والتكرار الأسبوعي
+- تمارين يجب تجنبها
+- تدرج البدء من الصفر
+
+⚠️ تنبيهات مهمة خاصة بحالته
+
+اكتب بأسلوب واضح ومنظم وعملي. في النهاية ذكّر بأن هذه الخطة للإرشاد العام وتستوجب مراجعة طبيب مختص.`
+    : `You are a clinical nutritionist and rehabilitation specialist focused on cardiovascular disease and stroke prevention.
+
+Patient profile:
+• Gender: ${p.gender}
+• Age: ${p.age} years
+• Hypertension: ${p.hypertension ? 'Yes' : 'No'}
+• Heart Disease: ${p.heart_disease ? 'Yes' : 'No'}
+• Avg Glucose: ${p.avg_glucose_level} mg/dL (${glucoseCat})
+• BMI: ${p.bmi} (${bmiCat})
+• Smoking: ${smokingMap[p.smoking_status] || p.smoking_status}
+• Stroke risk: ${prob}% (${risk})
+
+Please provide a personalised, practical plan covering:
+
+🥗 DIETARY PLAN:
+- Recommended foods (with practical examples)
+- Foods to avoid or limit
+- Full sample day (breakfast, lunch, dinner, snack)
+- Special tips based on their conditions
+
+🏃 EXERCISE PLAN:
+- Suitable exercise types for their profile
+- Duration and weekly frequency
+- Exercises to avoid
+- Beginner progression guide
+
+⚠️ IMPORTANT WARNINGS specific to their health data
+
+Write clearly and practically. End with a reminder that this is general guidance and a doctor should be consulted.`;
+
+  try {
+    const res  = await fetch('/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ message: prompt, lang: currentLang })
+    });
+    const data = await res.json();
+    loading.style.display = 'none';
+    dietTxt.style.display = 'block';
+    copyBtn.style.display = 'inline-block';
+    dietTxt.textContent = data.reply || (ar ? 'حدث خطأ، يرجى المحاولة مرة أخرى.' : 'An error occurred. Please try again.');
+  } catch(e) {
+    loading.style.display = 'none';
+    dietTxt.style.display = 'block';
+    dietTxt.textContent = ar ? '❌ تعذر الاتصال بـ Groq' : '❌ Could not connect to Groq';
+  }
+}
+
+function closeDietModal() {
+  document.getElementById('diet-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function copyDietPlan() {
+  const txt = document.getElementById('diet-text').textContent;
+  navigator.clipboard.writeText(txt).then(() => {
+    const btn = document.getElementById('copy-diet-btn');
+    const orig = btn.textContent;
+    btn.textContent = currentLang === 'ar' ? '✅ تم النسخ' : '✅ Copied!';
+    setTimeout(() => btn.textContent = orig, 2000);
+  });
+}
+
+// ── Hospitals ──────────────────────────────────────────
+const HOSPITALS = [
+  {
+    name_en:'King Hussein Medical City',      name_ar:'مدينة الملك الحسين الطبية',
+    city_en:'Amman',                          city_ar:'عمان',
+    desc_en:'Largest military medical complex in Jordan. Fully equipped neurology & stroke ICU with 24/7 emergency response.',
+    desc_ar:'أكبر مجمع طبي عسكري في الأردن. يضم وحدة عصبية ومركز طوارئ متكامل للسكتة على مدار الساعة.',
+    tags_en:['24/7 Emergency','Stroke Unit','Neurosurgery','ICU'],
+    tags_ar:['طوارئ 24/7','وحدة سكتة','جراحة أعصاب','عناية مركزة'],
+    phone:'06-5100000',
+    map:'https://maps.google.com/?q=King+Hussein+Medical+City+Amman+Jordan',
+    urgent:true
+  },
+  {
+    name_en:'Jordan University Hospital',     name_ar:'مستشفى الجامعة الأردنية',
+    city_en:'Amman',                          city_ar:'عمان',
+    desc_en:'Academic teaching hospital with a dedicated neurology department and stroke rehabilitation programme.',
+    desc_ar:'مستشفى جامعي تعليمي متخصص بقسم الأمراض العصبية وبرنامج إعادة تأهيل السكتة الدماغية.',
+    tags_en:['Neurology Dept','Stroke Rehab','Academic Center'],
+    tags_ar:['قسم الأعصاب','تأهيل السكتة','مركز أكاديمي'],
+    phone:'06-5353444',
+    map:'https://maps.google.com/?q=Jordan+University+Hospital+Amman',
+    urgent:false
+  },
+  {
+    name_en:'Istishari Hospital',             name_ar:'مستشفى الاستشاري',
+    city_en:'Amman',                          city_ar:'عمان',
+    desc_en:'JCI-accredited private hospital with a stroke fast-track protocol and advanced neuro-imaging (MRI/CT Angio).',
+    desc_ar:'مستشفى خاص معتمد دولياً (JCI) مع بروتوكول سريع للسكتة وتصوير عصبي متقدم.',
+    tags_en:['JCI Accredited','Fast-Track Stroke','MRI / CT Angio'],
+    tags_ar:['اعتماد JCI','بروتوكول سريع','MRI / CT Angio'],
+    phone:'06-5820542',
+    map:'https://maps.google.com/?q=Istishari+Hospital+Amman+Jordan',
+    urgent:true
+  },
+  {
+    name_en:'Al-Khalidi Medical Center',      name_ar:'مركز الخالدي الطبي',
+    city_en:'Amman',                          city_ar:'عمان',
+    desc_en:'Specialised private centre with a strong neurology team and out-patient stroke follow-up clinics.',
+    desc_ar:'مركز خاص متخصص بفريق طبي قوي في الأعصاب وعيادات متابعة خارجية للسكتة.',
+    tags_en:['Neurology Clinic','Out-patient Follow-up','Diagnostics'],
+    tags_ar:['عيادة أعصاب','متابعة خارجية','تشخيص متقدم'],
+    phone:'06-4644281',
+    map:'https://maps.google.com/?q=Al+Khalidi+Medical+Center+Amman',
+    urgent:false
+  },
+  {
+    name_en:'Prince Hashem Military Hospital', name_ar:'مستشفى الأمير هاشم العسكري',
+    city_en:'Zarqa',                           city_ar:'الزرقاء',
+    desc_en:'Main military hospital for the Zarqa governorate with emergency neurology services.',
+    desc_ar:'المستشفى العسكري الرئيسي في محافظة الزرقاء مع خدمات طوارئ أعصاب.',
+    tags_en:['Emergency','Neurology','Zarqa Region'],
+    tags_ar:['طوارئ','أعصاب','منطقة الزرقاء'],
+    phone:'05-3826666',
+    map:'https://maps.google.com/?q=Prince+Hashem+Military+Hospital+Zarqa+Jordan',
+    urgent:true
+  },
+  {
+    name_en:'Princess Basma Teaching Hospital', name_ar:'مستشفى الأميرة بسمة التعليمي',
+    city_en:'Irbid',                            city_ar:'إربد',
+    desc_en:'Northern Jordan\'s leading public hospital for neurological emergencies serving Irbid and surrounding areas.',
+    desc_ar:'المستشفى الحكومي الرائد في شمال الأردن لطوارئ الأعصاب ويخدم إربد والمناطق المحيطة.',
+    tags_en:['24/7 Emergency','Neurology','Northern Jordan'],
+    tags_ar:['طوارئ 24/7','أعصاب','شمال الأردن'],
+    phone:'02-7241431',
+    map:'https://maps.google.com/?q=Princess+Basma+Hospital+Irbid+Jordan',
+    urgent:true
+  },
+  {
+    name_en:'Al-Bashir Hospital',             name_ar:'مستشفى البشير',
+    city_en:'Amman',                          city_ar:'عمان',
+    desc_en:'Largest public hospital in Jordan with a neurosciences department and 24/7 stroke emergency care.',
+    desc_ar:'أكبر مستشفى حكومي في الأردن بقسم علم الأعصاب وطوارئ السكتة على مدار الساعة.',
+    tags_en:['Largest Public Hospital','24/7 Stroke ER','Neurosciences'],
+    tags_ar:['أكبر مستشفى حكومي','طوارئ سكتة 24/7','علوم الأعصاب'],
+    phone:'06-5008484',
+    map:'https://maps.google.com/?q=Al+Bashir+Hospital+Amman+Jordan',
+    urgent:true
+  },
+  {
+    name_en:'Aqaba Specialty Hospital',       name_ar:'مستشفى العقبة التخصصي',
+    city_en:'Aqaba',                          city_ar:'العقبة',
+    desc_en:'Southern Jordan\'s main specialty hospital providing neurology and stroke emergency services.',
+    desc_ar:'المستشفى التخصصي الرئيسي في جنوب الأردن يوفر خدمات طوارئ الأعصاب والسكتة.',
+    tags_en:['Specialty Hospital','Neurology','Southern Jordan'],
+    tags_ar:['مستشفى تخصصي','أعصاب','جنوب الأردن'],
+    phone:'03-2014111',
+    map:'https://maps.google.com/?q=Aqaba+Specialty+Hospital+Jordan',
+    urgent:false
+  }
+];
+
+function showHospitals() {
+  const ar      = currentLang === 'ar';
+  const prob    = parseFloat((window._lastProb||0));
+  const risk    = window._lastRisk || 'Low';
+  const modal   = document.getElementById('hosp-modal');
+  const cards   = document.getElementById('hosp-cards');
+  const banner  = document.getElementById('hosp-banner');
+  const ulabel  = document.getElementById('hosp-urgency-label');
+
+  // Urgency message based on risk
+  const urgency = {
+    High:{
+      banner_en:'🚨 Your risk level is HIGH — we strongly recommend visiting a stroke centre within 24-48 hours.',
+      banner_ar:'🚨 مستوى خطرك مرتفع — ننصح بشدة بزيارة مركز متخصص خلال 24-48 ساعة.',
+      color:'rgba(239,68,68,0.12)', border:'rgba(239,68,68,0.3)', text:'#f87171'
+    },
+    Medium:{
+      banner_en:'⚠️ Your risk level is MODERATE — please schedule an appointment with a neurologist within 1-2 weeks.',
+      banner_ar:'⚠️ مستوى خطرك متوسط — يُرجى حجز موعد مع طبيب أعصاب خلال أسبوع إلى أسبوعين.',
+      color:'rgba(245,158,11,0.10)', border:'rgba(245,158,11,0.3)', text:'#fbbf24'
+    },
+    Low:{
+      banner_en:'✅ Your risk level is LOW — a routine annual neurology check-up is recommended.',
+      banner_ar:'✅ مستوى خطرك منخفض — يُنصح بفحص دوري سنوي لدى طبيب الأعصاب.',
+      color:'rgba(16,185,129,0.08)', border:'rgba(16,185,129,0.25)', text:'#34d399'
+    }
+  };
+  const u = urgency[risk];
+  banner.textContent     = ar ? u.banner_ar : u.banner_en;
+  banner.style.background= u.color;
+  banner.style.color     = u.text;
+  banner.style.borderBottom = `1px solid ${u.border}`;
+  ulabel.textContent = ar ? `نسبة الخطر: ${prob}%` : `Risk score: ${prob}%`;
+  ulabel.style.color = u.text;
+
+  // Build cards — urgent-tagged hospitals first for High risk
+  let list = [...HOSPITALS];
+  if (risk === 'High') list.sort((a,b) => (b.urgent?1:0)-(a.urgent?1:0));
+
+  cards.innerHTML = list.map(h => `
+    <div class="hosp-card">
+      <div class="h-name">${ar ? h.name_ar : h.name_en}</div>
+      <div class="h-city">📍 ${ar ? h.city_ar : h.city_en}${h.urgent ? `&nbsp;<span style="font-size:10px;background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);padding:1px 6px;border-radius:3px">${ar?'طوارئ 24/7':'24/7 ER'}</span>` : ''}</div>
+      <div class="h-desc">${ar ? h.desc_ar : h.desc_en}</div>
+      <div class="h-tags">${(ar ? h.tags_ar : h.tags_en).map(t=>`<span class="h-tag${h.urgent?' urg':''}">${t}</span>`).join('')}</div>
+      <div class="h-actions">
+        <a href="${h.map}" target="_blank" class="h-btn map">🗺️ ${ar?'خريطة':'Map'}</a>
+        <a href="tel:${h.phone}" class="h-btn call">📞 ${h.phone}</a>
+      </div>
+    </div>
+  `).join('');
+
+  modal.style.display   = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeHospModal() {
+  document.getElementById('hosp-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// Close hospitals modal on backdrop click
+document.addEventListener('click', function(e) {
+  if (e.target === document.getElementById('hosp-modal')) closeHospModal();
+});
+
+// Close modal on backdrop click
+document.addEventListener('click', function(e) {
+  const modal = document.getElementById('diet-modal');
+  if (e.target === modal) closeDietModal();
+});
+
+</script>
+
+</body>
+</html>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+(function(){
+  // ── Palette ──────────────────────────────────────────────────
+  const sky    = '#38bdf8';
+  const coral  = '#f87171';
+  const violet = '#818cf8';
+  const mint   = '#34d399';
+  const amber  = '#fbbf24';
+  const sky2   = '#60a5fa';
+
+  const tc = 'rgba(148,163,184,0.75)';
+  const gc = 'rgba(148,163,184,0.10)';
+  const axes = {
+    x:{ ticks:{color:tc,font:{size:11}}, grid:{color:gc} },
+    y:{ ticks:{color:tc,font:{size:11}}, grid:{color:gc} }
+  };
+  const base = { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} };
+
+  // Y axis 0-100% for all bar charts
+  const pct100 = {
+    ...axes.y,
+    min:0, max:100,
+    ticks:{ ...axes.y.ticks, callback:v=>v+'%', stepSize:20 }
+  };
+
+  function mk(id, cfg) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    new Chart(el, cfg);
+  }
+
+  // ── ch1 · Gender — Doughnut (already %) ──────────────────────
+  mk('ch1', {
+    type:'doughnut',
+    data:{
+      labels:['Female','Male'],
+      datasets:[{ data:[59.2,40.8], backgroundColor:[violet,sky], borderWidth:0, hoverOffset:6 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'62%',
+      plugins:{
+        legend:{display:false},
+        tooltip:{ callbacks:{ label: ctx => ' '+ctx.label+': '+ctx.parsed+'%' } }
+      }
+    }
+  });
+
+  // ── Shared data-label plugin ─────────────────────────────────
+  const dataLabelPlugin = {
+    id: 'dataLabels',
+    afterDatasetsDraw(chart) {
+      // Skip doughnut / pie — they get their own label handling
+      if (chart.config.type === 'doughnut' || chart.config.type === 'pie') return;
+
+      const ctx = chart.ctx;
+      chart.data.datasets.forEach((dataset, i) => {
+        const meta = chart.getDatasetMeta(i);
+        if (meta.hidden) return;
+        meta.data.forEach((bar, j) => {
+          const val = dataset.data[j];
+          if (val === null || val === undefined) return;
+          const label = val + '%';
+          ctx.save();
+          ctx.font = 'bold 10.5px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          const barHeight = bar.height || 0;
+          if (barHeight > 18) {
+            ctx.fillStyle = 'rgba(255,255,255,0.92)';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, bar.x, bar.y + barHeight / 2);
+          } else {
+            ctx.fillStyle = Array.isArray(dataset.backgroundColor)
+              ? dataset.backgroundColor[j]
+              : dataset.backgroundColor;
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(label, bar.x, bar.y - 3);
+          }
+          ctx.restore();
+        });
+      });
+    }
+  };
+  Chart.register(dataLabelPlugin);
+
+  // ── Doughnut segment label plugin (separate, safe) ────────────
+  const doughnutLabelPlugin = {
+    id: 'doughnutLabels',
+    afterDatasetsDraw(chart) {
+      if (chart.config.type !== 'doughnut') return;
+      const ctx   = chart.ctx;
+      const meta  = chart.getDatasetMeta(0);
+      const data  = chart.data.datasets[0].data;
+      const bg    = chart.data.datasets[0].backgroundColor;
+      meta.data.forEach((arc, i) => {
+        const val = data[i];
+        if (!val) return;
+        // Get midpoint angle of the arc
+        const startAngle = arc.startAngle;
+        const endAngle   = arc.endAngle;
+        const midAngle   = startAngle + (endAngle - startAngle) / 2;
+        // Place label at 75% of the way from centre to outer edge
+        const outerR  = arc.outerRadius;
+        const innerR  = arc.innerRadius;
+        const labelR  = innerR + (outerR - innerR) * 0.5;
+        const x = arc.x + labelR * Math.cos(midAngle);
+        const y = arc.y + labelR * Math.sin(midAngle);
+        // Only show if arc is big enough
+        const arcAngle = endAngle - startAngle;
+        if (arcAngle < 0.25) return;
+        ctx.save();
+        ctx.font = 'bold 11px Inter, sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(val + '%', x, y);
+        ctx.restore();
+      });
+    }
+  };
+  Chart.register(doughnutLabelPlugin);
+
+  // Grouped axes (no stacking)
+  const groupedY = {
+    ...axes.y,
+    min:0, max:100,
+    ticks:{ ...axes.y.ticks, callback: v => v+'%', stepSize:20 }
+  };
+  const groupedOpts = (extraX) => ({
+    ...base,
+    scales:{
+      x:{ ...axes.x, ...extraX },
+      y:{ ...groupedY }
+    },
+    plugins:{
+      ...base.plugins,
+      tooltip:{ callbacks:{ label: ctx => ' '+ctx.dataset.label+': '+ctx.parsed.y+'%' } }
+    }
+  });
+
+  // ── ch2 · Age — Grouped Bar ──────────────────────────────────
+  const ageNoStroke = [5200,2796,20940,9670];
+  const ageStroke   = [2,4,260,517];
+  const ageTotal    = ageNoStroke.map((v,i)=>v+ageStroke[i]);
+  const ageNoPct    = ageNoStroke.map((v,i)=>parseFloat((v/ageTotal[i]*100).toFixed(1)));
+  const ageSPct     = ageStroke.map((v,i)=>parseFloat((v/ageTotal[i]*100).toFixed(1)));
+
+  mk('ch2', {
+    type:'bar',
+    data:{
+      labels:['Child','Teen','Adult','Senior'],
+      datasets:[
+        { label:'No Stroke %', data:ageNoPct, backgroundColor:sky,   borderRadius:4, borderSkipped:false },
+        { label:'Stroke %',    data:ageSPct,  backgroundColor:coral, borderRadius:4, borderSkipped:false }
+      ]
+    },
+    options: groupedOpts({ ticks:{...axes.x.ticks, autoSkip:false} })
+  });
+
+  // ── ch3 · Hypertension — Grouped Bar ─────────────────────────
+  mk('ch3', {
+    type:'bar',
+    data:{
+      labels:['No Hypertension','Hypertension'],
+      datasets:[
+        { label:'No Stroke %', data:[98.5,95.1], backgroundColor:sky2,  borderRadius:4, borderSkipped:false },
+        { label:'Stroke %',    data:[1.5,4.9],   backgroundColor:coral, borderRadius:4, borderSkipped:false }
+      ]
+    },
+    options: groupedOpts({ ticks:{...axes.x.ticks, autoSkip:false} })
+  });
+
+  // ── ch4 · Heart Disease — Grouped Bar ────────────────────────
+  mk('ch4', {
+    type:'bar',
+    data:{
+      labels:['No Heart Disease','Heart Disease'],
+      datasets:[
+        { label:'No Stroke %', data:[98.5,91.4], backgroundColor:sky2,  borderRadius:4, borderSkipped:false },
+        { label:'Stroke %',    data:[1.5,8.6],   backgroundColor:coral, borderRadius:4, borderSkipped:false }
+      ]
+    },
+    options: groupedOpts({ ticks:{...axes.x.ticks, autoSkip:false} })
+  });
+
+  // ── ch5 · Glucose — Grouped Bar ──────────────────────────────
+  mk('ch5', {
+    type:'bar',
+    data:{
+      labels:['Normal\n(<100)','Pre-diabetic\n(100-126)','Diabetic\n(>126)'],
+      datasets:[
+        { label:'No Stroke %', data:[99.1,97.9,95.2], backgroundColor:mint,  borderRadius:4, borderSkipped:false },
+        { label:'Stroke %',    data:[0.9,2.1,4.8],    backgroundColor:coral, borderRadius:4, borderSkipped:false }
+      ]
+    },
+    options: groupedOpts({ ticks:{...axes.x.ticks, autoSkip:false} })
+  });
+
+  // ── ch6 · BMI — Grouped Bar ───────────────────────────────────
+  mk('ch6', {
+    type:'bar',
+    data:{
+      labels:['Underweight','Normal','Overweight','Obese'],
+      datasets:[
+        { label:'No Stroke %', data:[98.4,98.6,98.1,97.6], backgroundColor:sky2,  borderRadius:4, borderSkipped:false },
+        { label:'Stroke %',    data:[1.6,1.4,1.9,2.4],     backgroundColor:coral, borderRadius:4, borderSkipped:false }
+      ]
+    },
+    options: groupedOpts({ ticks:{...axes.x.ticks, autoSkip:false} })
+  });
+
+  // ── ch7 · Smoking — Grouped Bar ──────────────────────────────
+  mk('ch7', {
+    type:'bar',
+    data:{
+      labels:['Never\nSmoked','Formerly\nSmoked','Active\nSmoker'],
+      datasets:[
+        { label:'No Stroke %', data:[98.2,97.0,98.0], backgroundColor:mint,  borderRadius:4, borderSkipped:false },
+        { label:'Stroke %',    data:[1.8,3.0,2.0],    backgroundColor:coral, borderRadius:4, borderSkipped:false }
+      ]
+    },
+    options: groupedOpts({ ticks:{...axes.x.ticks, autoSkip:false, font:{size:10}} })
+  });
+
+  // ── ch8 · Smoking share — Doughnut ───────────────────────────
+  mk('ch8', {
+    type:'doughnut',
+    data:{
+      labels:['Never Smoked','Formerly Smoked','Active Smoker'],
+      datasets:[{
+        data:[53.3,24.9,21.8],
+        backgroundColor:[mint,amber,coral],
+        borderWidth:0,
+        hoverOffset:6
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'58%',
+      plugins:{
+        legend:{display:false},
+        tooltip:{ callbacks:{ label: ctx => ' '+ctx.label+': '+ctx.parsed+'%' } }
+      }
+    }
+  });
+
+})();
+</script>
+
+{% endraw %}
+</body>
+</html>
