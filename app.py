@@ -13,7 +13,8 @@ CORS(app)
 model  = pickle.load(open('stroke_model.pkl', 'rb'))
 scaler = pickle.load(open('scaler.pkl',       'rb'))
 
-GROQ_API_KEY = "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"
+import os
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "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")
 VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 TEXT_MODEL   = "llama-3.3-70b-versatile"
 
