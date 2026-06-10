@@ -1498,10 +1498,10 @@ document.addEventListener('click', function(e) {
   mk('ch7', {
     type:'bar',
     data:{
-      labels:['Never\nSmoked','Formerly\nSmoked','Active\nSmoker'],
+      labels:['Never\nSmoked','Formerly\nSmoked','Active\nSmoker','Unknown'],
       datasets:[
-        { label:'No Stroke %', data:[98.2,97.0,98.0], backgroundColor:mint,  borderRadius:4, borderSkipped:false },
-        { label:'Stroke %',    data:[1.8,3.0,2.0],    backgroundColor:coral, borderRadius:4, borderSkipped:false }
+        { label:'No Stroke %', data:[98.2,97.0,98.0,98.9], backgroundColor:mint,  borderRadius:4, borderSkipped:false },
+        { label:'Stroke %',    data:[1.8,3.0,2.0,1.1],     backgroundColor:coral, borderRadius:4, borderSkipped:false }
       ]
     },
     options: groupedOpts({ ticks:{...axes.x.ticks, autoSkip:false, font:{size:10}} })
