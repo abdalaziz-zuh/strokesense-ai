@@ -16,7 +16,7 @@ scaler = pickle.load(open('scaler.pkl',       'rb'))
 import os
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
-TEXT_MODEL   = "llama-3.3-70b-versatile"
+TEXT_MODEL   = "openai/gpt-oss-120b"
 
 EXTRACT_PROMPT = """You are a medical data extraction assistant.
 Extract the following fields from this medical lab report:
